@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PitchPulse - Validate Startup Ideas & Connect with Angel Investors</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            max-width: 100%;
+            overflow-x: clip;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .pitch-card,
+        .stat-card {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .modal-backdrop {
+            background-color: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Fluid bar & motion animations */
+        @keyframes fluidWave {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes shimmerSweep {
+            0% { transform: translateX(-120%); }
+            100% { transform: translateX(240%); }
+        }
+        @keyframes cardEnter {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fluid-bar-blue {
+            background: linear-gradient(90deg, #4f46e5, #2563eb, #0284c7, #4f46e5);
+            background-size: 250% 100%;
+            animation: fluidWave 4.5s ease-in-out infinite;
+            transition: width 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .fluid-bar-emerald {
+            background: linear-gradient(90deg, #059669, #10b981, #0ea5e9, #059669);
+            background-size: 250% 100%;
+            animation: fluidWave 4.5s ease-in-out infinite;
+            transition: width 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .fluid-bar-amber {
+            background: linear-gradient(90deg, #d97706, #f59e0b, #2563eb, #d97706);
+            background-size: 250% 100%;
+            animation: fluidWave 5s ease-in-out infinite;
+            transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .bar-shimmer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 45%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+            animation: shimmerSweep 2.6s ease-in-out infinite;
+        }
+        .pitch-card {
+            animation: cardEnter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+        .pitch-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -10px rgba(37, 99, 235, 0.14);
+            border-color: #bfdbfe;
+        }
+        .stat-card {
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-1px);
+            border-color: #cbd5e1;
+            box-shadow: 0 6px 16px -6px rgba(15, 23, 42, 0.08);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Top Announcement / Mode Bar -->
+    <div class="bg-indigo-950 text-indigo-100 text-xs py-2 px-4 border-b border-indigo-900">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center space-x-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-medium">Cloud Sync Active:</span>
+                <span class="text-indigo-300 hidden sm:inline">Live startup validation &amp; soft-pledge discovery synced via Supabase.</span>
+            </div>
+            <div class="flex items-center flex-wrap gap-2">
+                <span class="text-indigo-300 text-[11px] hidden md:inline">Perspective:</span>
+                <div class="inline-flex rounded-full bg-indigo-900/90 p-0.5 border border-indigo-700/70 text-[11px] font-semibold">
+                    <button id="modeCommunityBtn" onclick="setRoleMode('community')" class="px-2.5 py-1 rounded-full transition text-white bg-indigo-600 shadow-sm">
+                        Founder &amp; Validator
+                    </button>
+                    <button id="modeInvestorBtn" onclick="setRoleMode('investor')" class="px-2.5 py-1 rounded-full transition text-indigo-200 hover:text-white flex items-center space-x-1">
+                        <span>Angel Investor</span>
+                    </button>
+                </div>
+                <button id="devModeToggleBtn" onclick="toggleDevMode()" class="hidden text-[11px] font-mono px-2 py-0.5 rounded border border-emerald-500/50 bg-emerald-950/60 text-emerald-200 hover:text-white transition">
+                    Dev Mode: ON
+                </button>
+                <button id="renameSiteBtn" onclick="editBrandName()" class="hidden text-indigo-300 hover:text-white font-semibold underline text-[11px] flex items-center space-x-1">
+                    <i data-lucide="edit-3" class="w-3 h-3"></i>
+                    <span>Rename Site</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-2 sm:gap-4 min-w-0">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-2 cursor-pointer group shrink-0 whitespace-nowrap" onclick="scrollToTop()">
+                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 transition-transform duration-200 group-hover:scale-105 shrink-0">
+                    <i data-lucide="rocket" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                </div>
+                <div class="flex items-center space-x-1 whitespace-nowrap">
+                    <span id="brandNameDisplay" class="font-extrabold text-base sm:text-xl tracking-tight text-slate-900 whitespace-nowrap">Pitch<span class="text-blue-600">Pulse</span></span>
+                    <button id="brandEditIcon" onclick="event.stopPropagation(); editBrandName()" title="Rename Brand" class="hidden text-slate-400 hover:text-indigo-600 p-1 rounded transition shrink-0">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <span class="hidden lg:inline-block ml-1 text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 shrink-0">Angel &amp; Validation Hub</span>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="flex-1 max-w-md hidden md:block min-w-0">
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input id="searchInput" type="text" oninput="handleSearch(this.value)" placeholder="Search startups, problems, sectors, or tags..." class="w-full pl-10 pr-4 py-2 bg-slate-100 hover:bg-slate-200/70 focus:bg-white text-sm rounded-xl border border-transparent focus:border-indigo-500 focus:outline-none transition">
+                </div>
+            </div>
+
+            <!-- CTA Actions (Pitch button removed from top bar; floating Pitch Idea stays accessible) -->
+            <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                <button id="authOpenBtn" onclick="openAuthModal('login')" class="inline-flex items-center space-x-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl transition cursor-pointer whitespace-nowrap">
+                    <i data-lucide="log-in" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+                    <span>Log In</span>
+                </button>
+                <button id="authLogoutBtn" onclick="handleLogout()" title="Log Out" class="hidden items-center space-x-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl transition cursor-pointer whitespace-nowrap">
+                    <i data-lucide="log-out" class="w-3.5 h-3.5 shrink-0"></i>
+                    <span class="hidden md:inline">Log Out</span>
+                </button>
+                <button id="authUserBadge" type="button" onclick="openProfileModal()" title="View Profile & Photo" class="hidden items-center space-x-1.5 bg-slate-100 hover:bg-indigo-50 hover:border-indigo-200 border border-slate-200 text-slate-700 hover:text-indigo-700 text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-xl max-w-[140px] sm:max-w-[220px] min-w-0 transition cursor-pointer">
+                    <span id="headerAvatarWrap" class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold flex items-center justify-center overflow-hidden shrink-0">
+                        <img id="headerAvatarImg" src="" alt="Profile" class="hidden w-full h-full object-cover">
+                        <span id="headerAvatarInitials">PP</span>
+                    </span>
+                    <span id="authUserLabel" class="truncate">Profile</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Fluid Sync / Validation Momentum Bar -->
+        <div class="h-1 w-full bg-blue-50 overflow-hidden">
+            <div id="syncMomentumBar" class="h-full w-1/3 fluid-bar-blue relative bar-shimmer"></div>
+        </div>
+
+        <!-- Mobile Search Bar -->
+        <div class="px-4 pb-3 pt-2 md:hidden">
+            <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" oninput="handleSearch(this.value)" placeholder="Search ideas, sectors, angels..." class="w-full pl-9 pr-3 py-1.5 bg-slate-100 text-sm rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+            </div>
+        </div>
+    </header>
+
+    <!-- Investor Mode Banner -->
+    <div id="investorModeBanner" class="hidden bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 border-b border-amber-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+            <div class="flex items-center space-x-2 text-amber-900">
+                <i data-lucide="briefcase" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                <span><strong>Angel Investor Deal Flow Active:</strong> Filtering for startups actively raising capital and open to non-binding soft-pledges.</span>
+            </div>
+            <button onclick="setRoleMode('community')" class="text-amber-800 hover:text-amber-950 font-semibold underline text-xs">Exit Investor View</button>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Stats Strip -->
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div class="stat-card bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-500">Live Pitches</p>
+                        <p id="statTotalIdeas" class="text-2xl font-extrabold text-slate-900 mt-0.5 font-mono">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="w-full h-1.5 rounded-full bg-indigo-100 overflow-hidden relative">
+                    <div id="barLivePitches" class="h-full rounded-full fluid-bar-blue bar-shimmer" style="width: 12%"></div>
+                </div>
+            </div>
+
+            <div class="stat-card bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-500">Raising Capital</p>
+                        <p id="fundingBadgeCount" class="text-2xl font-extrabold text-amber-600 mt-0.5 font-mono">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="w-full h-1.5 rounded-full bg-amber-100 overflow-hidden relative">
+                    <div id="barRaisingCapital" class="h-full rounded-full fluid-bar-amber bar-shimmer" style="width: 10%"></div>
+                </div>
+            </div>
+
+            <div class="stat-card col-span-2 lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-500">Soft-Pledged Interest</p>
+                        <p id="statInvestorPledged" class="text-2xl font-extrabold text-emerald-600 mt-0.5 font-mono">₹0 L</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i data-lucide="handshake" class="w-5 h-5"></i>
+                    </div>
+                </div>
+                <div class="w-full h-1.5 rounded-full bg-emerald-100 overflow-hidden relative">
+                    <div id="barSoftPledged" class="h-full rounded-full fluid-bar-emerald bar-shimmer" style="width: 10%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Filter Tabs -->
+        <div class="flex items-center justify-between gap-4 mb-4 overflow-x-auto no-scrollbar pb-1">
+            <div class="flex items-center space-x-2 text-xs sm:text-sm">
+                <button id="tabAll" onclick="setQuickTab('all')" class="px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-indigo-600 text-white shadow-sm">
+                    All Pitches
+                </button>
+                <button id="tabFunding" onclick="setQuickTab('funding')" class="px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-white border border-amber-300 text-amber-800 hover:bg-amber-50 flex items-center space-x-1.5">
+                    <span>Seeking Angels</span>
+                </button>
+                <button id="tabValidated" onclick="setQuickTab('validated')" class="px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-white border border-slate-200 text-slate-700 hover:bg-slate-100">
+                    75%+ Validated
+                </button>
+                <button id="tabStealth" onclick="setQuickTab('stealth')" class="px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-white border border-purple-200 text-purple-700 hover:bg-purple-50">
+                    Stealth Mode
+                </button>
+            </div>
+        </div>
+
+        <!-- Sector Pills -->
+        <div id="categoryPillContainer" class="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-4 mb-2"></div>
+
+        <!-- Feed -->
+        <div id="startupFeed" class="space-y-4"></div>
+    </main>
+
+    <!-- Official Platform Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+            <div class="flex items-center space-x-2 text-center sm:text-left">
+                <span id="footerBrandName" class="font-bold text-slate-800">PitchPulse</span>
+                <span>•</span>
+                <span>Startup Idea Validation &amp; Early-Stage Angel Discovery</span>
+            </div>
+            <div class="text-[11px] text-slate-400 text-center sm:text-right">
+                Soft-pledges shown are non-binding expressions of interest. Always conduct independent diligence.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Convenient Floating Pitch Button -->
+    <button id="floatingPitchBtn" type="button" onclick="openPostModal()" aria-label="Pitch your idea" class="fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-40 inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs sm:text-sm font-bold px-4 py-3 rounded-full shadow-lg shadow-indigo-900/20 border border-indigo-400/30 transition cursor-pointer">
+        <i data-lucide="sparkles" class="w-4 h-4 shrink-0"></i>
+        <span>Pitch Idea</span>
+    </button>
+
+    <!-- Pitch Submission Modal -->
+    <div id="postModal" class="hidden fixed inset-0 z-50 modal-backdrop overflow-y-auto p-3 sm:p-6">
+        <div class="min-h-full w-full flex items-start sm:items-center justify-center">
+            <div class="bg-white rounded-2xl border border-slate-200 max-w-xl w-full p-4 sm:p-6 shadow-2xl max-h-[90dvh] flex flex-col overflow-hidden">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+                    <h2 class="text-base sm:text-lg font-extrabold text-slate-900">Pitch a Startup Idea</h2>
+                    <button type="button" onclick="closePostModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <form id="postIdeaForm" onsubmit="handlePostSubmit(event)" class="space-y-4 mt-4 text-sm overflow-y-auto pr-1 flex-1 min-h-0">
+                <!-- Quick-Start Templates for Faster Pitching -->
+                <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-800">Quick-Fill Starter</span>
+                        <span class="text-[11px] text-indigo-600">Tap to pre-fill &amp; edit</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="applyPitchPreset('saas')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-600 text-slate-700 hover:text-white border border-indigo-200 text-xs font-semibold transition cursor-pointer">AI Workflow SaaS</button>
+                        <button type="button" onclick="applyPitchPreset('fintech')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-600 text-slate-700 hover:text-white border border-indigo-200 text-xs font-semibold transition cursor-pointer">UPI / FinTech Tool</button>
+                        <button type="button" onclick="applyPitchPreset('mobility')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-600 text-slate-700 hover:text-white border border-indigo-200 text-xs font-semibold transition cursor-pointer">EV / Local Mobility</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Startup / Idea Title *</label>
+                    <input id="inputTitle" type="text" required placeholder="e.g., PaySplit for Shared Flats" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Sector *</label>
+                        <select id="inputCategory" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none bg-white">
+                            <option>AI &amp; SaaS</option>
+                            <option>Mobility/EV</option>
+                            <option>FinTech</option>
+                            <option>EdTech</option>
+                            <option>Local Services</option>
+                            <option>D2C &amp; Retail</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Your Name *</label>
+                        <input id="inputAuthor" type="text" required placeholder="e.g., Aarav Sharma" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Role</label>
+                        <input id="inputRole" type="text" placeholder="Founder / Builder" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <label class="flex items-center space-x-2 pt-5 cursor-pointer">
+                        <input id="inputStealth" type="checkbox" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs font-semibold text-slate-700">Post in Stealth Mode (hide name)</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Problem *</label>
+                    <textarea id="inputProblem" rows="2" required placeholder="What painful problem are you solving?" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Proposed Solution *</label>
+                    <textarea id="inputSolution" rows="2" required placeholder="How does your product solve it?" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Target Audience *</label>
+                    <input id="inputAudience" type="text" required placeholder="Who are your early adopters?" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Tags (comma-separated)</label>
+                    <input id="inputTags" type="text" placeholder="b2b, saas, mvp" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div class="pt-1">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input id="inputSeekingFunding" type="checkbox" onchange="toggleFundingFields()" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500">
+                        <span class="font-semibold text-slate-800">Actively seeking angel funding</span>
+                    </label>
+                </div>
+                <div id="fundingFieldsContainer" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 bg-amber-50/70 p-3 rounded-xl border border-amber-200">
+                    <div>
+                        <label class="block text-xs font-bold text-amber-900 mb-1">Ask (₹ Lakhs)</label>
+                        <input id="inputFundingAsk" type="number" step="0.5" min="0" placeholder="25" class="w-full px-3 py-1.5 rounded-lg border border-amber-300 bg-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-amber-900 mb-1">Stage</label>
+                        <select id="inputStage" class="w-full px-3 py-1.5 rounded-lg border border-amber-300 bg-white focus:outline-none">
+                            <option>Idea / Validation</option>
+                            <option>Prototype / MVP</option>
+                            <option>Early Revenue</option>
+                            <option>Pre-Seed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100 sticky bottom-0 bg-white">
+                    <button type="button" onclick="closePostModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-sm">Publish Pitch</button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Soft-Pledge Modal -->
+    <div id="pledgeModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h2 class="text-base font-extrabold text-slate-900">Non-Binding Soft-Pledge</h2>
+                <button onclick="closePledgeModal()" class="text-slate-400 hover:text-slate-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p id="pledgeStartupTitle" class="text-xs font-bold text-amber-700 mt-2"></p>
+            <form onsubmit="handlePledgeSubmit(event)" class="space-y-3 mt-3 text-sm">
+                <input id="pledgeIdeaId" type="hidden">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Investor Name / Syndicate *</label>
+                    <input id="pledgeInvestorName" type="text" required placeholder="Your name or angel group" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Indicative Interest (₹ Lakhs) *</label>
+                    <input id="pledgeAmountLakhs" type="number" step="0.5" min="0.5" required placeholder="10" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-amber-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Note for Founder</label>
+                    <input id="pledgeNote" type="text" placeholder="Happy to connect on GTM or intros" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-amber-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closePledgeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold">Submit Pledge</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sign Up / Log In Modal -->
+    <div id="authModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                    <h2 id="authModalTitle" class="text-lg font-extrabold text-slate-900">Log In to PitchPulse</h2>
+                    <p id="authModalSubtitle" class="text-xs text-slate-500 mt-0.5">Access your founder pitches, validation votes, and deal flow.</p>
+                </div>
+                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Mode Tabs -->
+            <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl mt-4 text-xs font-bold">
+                <button id="authTabLogin" type="button" onclick="switchAuthTab('login')" class="py-2 rounded-lg bg-white text-slate-900 shadow-sm transition">
+                    Log In
+                </button>
+                <button id="authTabSignup" type="button" onclick="switchAuthTab('signup')" class="py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">
+                    Sign Up
+                </button>
+            </div>
+
+            <div id="authFeedback" class="hidden mt-3 text-xs rounded-xl px-3 py-2 border"></div>
+
+            <!-- Log In Form -->
+            <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-3 mt-4 text-sm">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Email Address *</label>
+                    <input id="loginEmail" type="email" required placeholder="you@example.com" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Password *</label>
+                    <input id="loginPassword" type="password" required minlength="6" placeholder="••••••••" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeAuthModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50">Cancel</button>
+                    <button id="loginSubmitBtn" type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-sm">Log In</button>
+                </div>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form id="signupForm" onsubmit="handleSignupSubmit(event)" class="hidden space-y-3 mt-4 text-sm">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Full Name *</label>
+                    <input id="signupName" type="text" required placeholder="e.g., Riya Kulkarni" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">I am joining as</label>
+                    <select id="signupRole" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none bg-white">
+                        <option value="Founder / Builder">Founder / Builder</option>
+                        <option value="Student">Student</option>
+                        <option value="Angel Investor">Angel Investor</option>
+                        <option value="Community Validator">Community Validator</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Email Address *</label>
+                    <input id="signupEmail" type="email" required placeholder="you@example.com" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Password (min 6 characters) *</label>
+                    <input id="signupPassword" type="password" required minlength="6" placeholder="Create a password" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeAuthModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50">Cancel</button>
+                    <button id="signupSubmitBtn" type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-sm">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div id="profileModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-4 sm:p-6 shadow-2xl my-auto max-h-[90vh] overflow-y-auto min-w-0">
+            <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-100 min-w-0">
+                <div class="flex items-center space-x-2.5 min-w-0">
+                    <div id="profileAvatar" class="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-extrabold text-sm flex items-center justify-center shadow-sm overflow-hidden shrink-0">
+                        <img id="profileAvatarImg" src="" alt="Profile Photo" class="hidden w-full h-full object-cover">
+                        <span id="profileAvatarInitials">PP</span>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 id="profileModalName" class="text-base font-extrabold text-slate-900 truncate">Your Profile</h2>
+                        <p id="profileModalEmail" class="text-xs text-slate-500 truncate">Signed-in Member</p>
+                        <div class="flex items-center flex-wrap gap-2 mt-1.5">
+                            <label for="profilePhotoInput" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-bold cursor-pointer transition">
+                                <i data-lucide="camera" class="w-3 h-3"></i>
+                                <span>Upload Photo</span>
+                            </label>
+                            <input id="profilePhotoInput" type="file" accept="image/*" onchange="handleProfilePhotoChange(event)" class="hidden">
+                            <button id="removePhotoBtn" type="button" onclick="removeProfilePhoto()" class="hidden text-[11px] font-semibold text-rose-600 hover:text-rose-700 underline cursor-pointer">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" onclick="closeProfileModal()" class="text-slate-400 hover:text-slate-700 shrink-0">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="mt-4 space-y-3 text-sm min-w-0">
+                <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-2.5 min-w-0">
+                    <div class="flex items-center justify-between gap-3 text-xs min-w-0">
+                        <span class="font-semibold text-slate-500 shrink-0">Full Name</span>
+                        <span id="profileDetailName" class="font-bold text-slate-800 text-right truncate">—</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3 text-xs min-w-0">
+                        <span class="font-semibold text-slate-500 shrink-0">Email</span>
+                        <span id="profileDetailEmail" class="font-mono text-slate-700 text-right break-all">—</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3 text-xs min-w-0">
+                        <span class="font-semibold text-slate-500 shrink-0">Account Role</span>
+                        <span id="profileDetailRole" class="px-2.5 py-0.5 rounded-full font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 text-right truncate max-w-[180px]">Founder / Builder</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-3 text-xs min-w-0">
+                        <span class="font-semibold text-slate-500 shrink-0">Auth Status</span>
+                        <span class="px-2.5 py-0.5 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">Signed In</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5 pt-1 text-xs">
+                    <div class="bg-blue-50/60 border border-blue-100 rounded-xl p-3 min-w-0">
+                        <p class="text-slate-500 font-medium truncate">Your Pitches</p>
+                        <p id="profilePitchCount" class="text-lg font-extrabold font-mono text-slate-900 mt-0.5">0</p>
+                    </div>
+                    <div class="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 min-w-0">
+                        <p class="text-slate-500 font-medium truncate">Soft-Pledges Given</p>
+                        <p id="profilePledgeCount" class="text-lg font-extrabold font-mono text-emerald-700 mt-0.5">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-4 mt-4 border-t border-slate-100">
+                <button type="button" onclick="closeProfileModal(); handleLogout();" class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition">
+                    <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                    <span>Log Out</span>
+                </button>
+                <button type="button" onclick="closeProfileModal()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Brand Modal -->
+    <div id="renameModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 max-w-sm w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h2 class="text-base font-extrabold text-slate-900">Rename Platform</h2>
+                <button onclick="closeRenameModal()" class="text-slate-400 hover:text-slate-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form onsubmit="handleRenameSubmit(event)" class="space-y-3 mt-4 text-sm">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">First Word</label>
+                    <input id="renameFirstWord" type="text" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Second Word (Highlighted)</label>
+                    <input id="renameSecondWord" type="text" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeRenameModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold">Save Name</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://nzkhjpvaiyqbhejxitzy.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_KBLouJ245V7GlYaRvdklNw_2LtDn-3J';
+        const DEV_PIN = 'pulse2026';
+
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+        let brandFirst = 'Pitch';
+        let brandSecond = 'Pulse';
+        let currentRole = 'community';
+        let quickTab = 'all';
+        let selectedCategory = 'All';
+        let searchQuery = '';
+        let devMode = false;
+
+        const categories = ['All', 'AI & SaaS', 'Mobility/EV', 'FinTech', 'EdTech', 'Local Services', 'D2C & Retail'];
+        let ideas = [];
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str || '';
+            return div.innerHTML;
+        }
+
+        function mapRowToIdea(row) {
+            return {
+                id: row.id,
+                title: row.title,
+                category: row.category,
+                author: row.author,
+                role: row.role || 'Founder',
+                stealth: Boolean(row.stealth),
+                proofHash: row.proof_hash || generateHash(),
+                timestamp: row.timestamp || '',
+                problem: row.problem,
+                solution: row.solution,
+                audience: row.audience,
+                tags: Array.isArray(row.tags) ? row.tags : [],
+                seekingFunding: Boolean(row.seeking_funding),
+                fundingAsk: Number(row.funding_ask) || 0,
+                stage: row.stage || 'Idea / Validation',
+                yesVotes: Number(row.yes_votes) || 0,
+                noVotes: Number(row.no_votes) || 0,
+                userVote: null,
+                pledges: Array.isArray(row.pledges) ? row.pledges : [],
+                comments: Array.isArray(row.comments) ? row.comments : []
+            };
+        }
+
+        function mapIdeaToRow(idea) {
+            return {
+                id: idea.id,
+                title: idea.title,
+                category: idea.category,
+                author: idea.author,
+                role: idea.role,
+                stealth: idea.stealth,
+                proof_hash: idea.proofHash,
+                timestamp: idea.timestamp,
+                problem: idea.problem,
+                solution: idea.solution,
+                audience: idea.audience,
+                tags: idea.tags,
+                seeking_funding: idea.seekingFunding,
+                funding_ask: idea.fundingAsk,
+                stage: idea.stage,
+                yes_votes: idea.yesVotes,
+                no_votes: idea.noVotes,
+                pledges: idea.pledges,
+                comments: idea.comments
+            };
+        }
+
+        function pulseSyncBar(widthPct = 100) {
+            const bar = document.getElementById('syncMomentumBar');
+            if (!bar) return;
+            bar.style.transition = 'none';
+            bar.style.width = '18%';
+            void bar.offsetWidth;
+            bar.style.transition = 'width 0.65s cubic-bezier(0.22, 1, 0.36, 1)';
+            bar.style.width = `${Math.max(18, Math.min(100, widthPct))}%`;
+        }
+
+        async function loadState() {
+            pulseSyncBar(55);
+            const { data: cfg } = await db
+                .from('site_config')
+                .select('brand_first, brand_second')
+                .eq('id', 1)
+                .maybeSingle();
+
+            if (cfg) {
+                brandFirst = cfg.brand_first || 'Pitch';
+                brandSecond = cfg.brand_second || 'Pulse';
+            }
+
+            const { data: rows, error } = await db
+                .from('pitches')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (!error && Array.isArray(rows)) {
+                ideas = rows.map(mapRowToIdea);
+            }
+            pulseSyncBar(100);
+        }
+
+        async function upsertIdea(idea) {
+            pulseSyncBar(65);
+            const { error } = await db.from('pitches').upsert(mapIdeaToRow(idea));
+            if (error) {
+                alert('Could not save pitch to Supabase: ' + error.message);
+            }
+            pulseSyncBar(100);
+        }
+
+        async function saveBrandConfig() {
+            pulseSyncBar(70);
+            const { error } = await db.from('site_config').upsert({
+                id: 1,
+                brand_first: brandFirst,
+                brand_second: brandSecond
+            });
+            if (error) {
+                alert('Could not save brand name: ' + error.message);
+            }
+            pulseSyncBar(100);
+        }
+
+        function updateBrandTitle() {
+            document.getElementById('brandNameDisplay').innerHTML = `${escapeHtml(brandFirst)}<span class="text-blue-600">${escapeHtml(brandSecond)}</span>`;
+            const footerBrand = document.getElementById('footerBrandName');
+            if (footerBrand) footerBrand.textContent = `${brandFirst}${brandSecond}`;
+            document.title = `${brandFirst}${brandSecond} - Validate Startup Ideas & Connect with Angel Investors`;
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+                e.preventDefault();
+                toggleDevMode();
+            }
+        });
+
+        function applyDevModeUI() {
+            const toggleBtn = document.getElementById('devModeToggleBtn');
+            const renameBtn = document.getElementById('renameSiteBtn');
+            const editIcon = document.getElementById('brandEditIcon');
+
+            toggleBtn.classList.toggle('hidden', !devMode);
+            toggleBtn.textContent = 'Dev Mode: ON';
+            toggleBtn.className = devMode
+                ? 'text-[11px] font-mono px-2 py-0.5 rounded border border-emerald-400 bg-emerald-900/70 text-emerald-200 hover:text-white transition'
+                : 'hidden';
+
+            renameBtn.classList.toggle('hidden', !devMode);
+            editIcon.classList.toggle('hidden', !devMode);
+            renderFeed();
+        }
+
+        function toggleDevMode() {
+            if (!devMode) {
+                const entered = prompt('Enter Developer PIN to enable Dev Mode:');
+                if (entered === null) return;
+                if (entered !== DEV_PIN) {
+                    alert('Incorrect Developer PIN.');
+                    return;
+                }
+                devMode = true;
+            } else {
+                devMode = false;
+            }
+            applyDevModeUI();
+        }
+
+        function editBrandName() {
+            if (!devMode) return;
+            document.getElementById('renameFirstWord').value = brandFirst;
+            document.getElementById('renameSecondWord').value = brandSecond;
+            document.getElementById('renameModal').classList.remove('hidden');
+        }
+
+        function closeRenameModal() {
+            document.getElementById('renameModal').classList.add('hidden');
+        }
+
+        async function handleRenameSubmit(e) {
+            e.preventDefault();
+            if (!devMode) return;
+            brandFirst = document.getElementById('renameFirstWord').value.trim() || 'Pitch';
+            brandSecond = document.getElementById('renameSecondWord').value.trim() || 'Pulse';
+            updateBrandTitle();
+            await saveBrandConfig();
+            closeRenameModal();
+        }
+
+        async function deleteIdea(id) {
+            if (!devMode) return;
+            ideas = ideas.filter(i => i.id !== id);
+            await db.from('pitches').delete().eq('id', id);
+            renderAll();
+        }
+
+        function applyPitchPreset(type) {
+            const presets = {
+                saas: {
+                    title: 'LeadFlow AI for Small Agencies',
+                    category: 'AI & SaaS',
+                    role: 'Founder / Builder',
+                    problem: 'Small teams lose hours copying client inquiries from WhatsApp, email, and forms into spreadsheets.',
+                    solution: 'An automated inbox that captures leads, drafts replies, and tracks follow-ups in one view.',
+                    audience: 'Boutique agencies, consultants, and service studios with 2-25 staff',
+                    tags: 'ai, saas, automation, b2b'
+                },
+                fintech: {
+                    title: 'RentSplit UPI for Shared Homes',
+                    category: 'FinTech',
+                    role: 'Founder / Builder',
+                    problem: 'Roommates and flatmates waste time chasing rent, electricity bills, and shared expenses every month.',
+                    solution: 'Automated monthly split reminders with instant UPI tracking and receipt history.',
+                    audience: 'Working professionals and students living in shared flats or PGs',
+                    tags: 'fintech, upi, payments, consumer'
+                },
+                mobility: {
+                    title: 'ChargeSpot Finder for City EVs',
+                    category: 'Mobility/EV',
+                    role: 'Founder / Builder',
+                    problem: 'EV riders run into broken, occupied, or unverified charging points during daily commutes.',
+                    solution: 'Live crowd-verified charger availability, queue status, and route planning.',
+                    audience: 'Daily EV two-wheeler and commuter car owners',
+                    tags: 'ev, mobility, local, commuter'
+                }
+            };
+            const p = presets[type];
+            if (!p) return;
+            document.getElementById('inputTitle').value = p.title;
+            document.getElementById('inputCategory').value = p.category;
+            document.getElementById('inputRole').value = p.role;
+            document.getElementById('inputProblem').value = p.problem;
+            document.getElementById('inputSolution').value = p.solution;
+            document.getElementById('inputAudience').value = p.audience;
+            document.getElementById('inputTags').value = p.tags;
+        }
+
+        function openPostModal() {
+            const authorInput = document.getElementById('inputAuthor');
+            const roleInput = document.getElementById('inputRole');
+            if (currentUser && authorInput && !authorInput.value.trim()) {
+                const metaName = currentUser.user_metadata && currentUser.user_metadata.full_name;
+                authorInput.value = metaName || currentUser.email || '';
+            }
+            if (currentUser && roleInput && !roleInput.value.trim()) {
+                const metaRole = currentUser.user_metadata && currentUser.user_metadata.role;
+                if (metaRole) roleInput.value = metaRole;
+            }
+            const modal = document.getElementById('postModal');
+            modal.classList.remove('hidden');
+            modal.scrollTop = 0;
+            const form = document.getElementById('postIdeaForm');
+            if (form) form.scrollTop = 0;
+            lucide.createIcons();
+        }
+
+        function closePostModal() {
+            document.getElementById('postModal').classList.add('hidden');
+        }
+
+        function toggleFundingFields() {
+            const checked = document.getElementById('inputSeekingFunding').checked;
+            document.getElementById('fundingFieldsContainer').classList.toggle('hidden', !checked);
+        }
+
+        function generateHash() {
+            const chars = 'abcdef0123456789';
+            let hash = '0x';
+            for (let i = 0; i < 12; i++) {
+                hash += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return hash;
+        }
+
+        async function handlePostSubmit(e) {
+            e.preventDefault();
+            const title = document.getElementById('inputTitle').value.trim();
+            const category = document.getElementById('inputCategory').value;
+            const author = document.getElementById('inputAuthor').value.trim();
+            const role = document.getElementById('inputRole').value.trim() || 'Founder';
+            const stealth = document.getElementById('inputStealth').checked;
+            const problem = document.getElementById('inputProblem').value.trim();
+            const solution = document.getElementById('inputSolution').value.trim();
+            const audience = document.getElementById('inputAudience').value.trim();
+            const tagsRaw = document.getElementById('inputTags').value.trim();
+            const seekingFunding = document.getElementById('inputSeekingFunding').checked;
+            const fundingAsk = seekingFunding ? (parseFloat(document.getElementById('inputFundingAsk').value) || 0) : 0;
+            const stage = seekingFunding ? document.getElementById('inputStage').value : 'Idea / Validation';
+
+            if (!title || !author || !problem || !solution || !audience) return;
+
+            const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [category];
+
+            const newIdea = {
+                id: Date.now().toString(),
+                title,
+                category,
+                author,
+                role,
+                stealth,
+                proofHash: generateHash(),
+                timestamp: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+                problem,
+                solution,
+                audience,
+                tags,
+                seekingFunding,
+                fundingAsk,
+                stage,
+                yesVotes: 0,
+                noVotes: 0,
+                userVote: null,
+                pledges: [],
+                comments: []
+            };
+
+            ideas.unshift(newIdea);
+            await upsertIdea(newIdea);
+            document.getElementById('postIdeaForm').reset();
+            toggleFundingFields();
+            closePostModal();
+            renderAll();
+        }
+
+        function setRoleMode(mode) {
+            currentRole = mode;
+            const commBtn = document.getElementById('modeCommunityBtn');
+            const invBtn = document.getElementById('modeInvestorBtn');
+            const banner = document.getElementById('investorModeBanner');
+
+            if (mode === 'investor') {
+                invBtn.className = 'px-2.5 py-1 rounded-full transition text-white bg-amber-600 shadow-sm flex items-center space-x-1';
+                commBtn.className = 'px-2.5 py-1 rounded-full transition text-slate-600 hover:text-indigo-700';
+                banner.classList.remove('hidden');
+            } else {
+                commBtn.className = 'px-2.5 py-1 rounded-full transition text-white bg-indigo-600 shadow-sm';
+                invBtn.className = 'px-2.5 py-1 rounded-full transition text-slate-600 hover:text-amber-700 flex items-center space-x-1';
+                banner.classList.add('hidden');
+            }
+            renderFeed();
+        }
+
+        function setQuickTab(tab) {
+            quickTab = tab;
+            const tabs = {
+                all: { id: 'tabAll', active: 'px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-indigo-600 text-white shadow-sm', inactive: 'px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-white border border-slate-200 text-slate-700 hover:bg-slate-100' },
+                funding: { id: 'tabFunding', active: 'px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-amber-600 text-white shadow-sm flex items-center space-x-1.5', inactive: 'px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-white border border-amber-300 text-amber-800 hover:bg-amber-50 flex items-center space-x-1.5' },
+                validated: { id: 'tabValidated', active: 'px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-emerald-600 text-white shadow-sm', inactive: 'px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-white border border-slate-200 text-slate-700 hover:bg-slate-100' },
+                stealth: { id: 'tabStealth', active: 'px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-purple-600 text-white shadow-sm', inactive: 'px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap bg-white border border-purple-200 text-purple-700 hover:bg-purple-50' }
+            };
+
+            Object.keys(tabs).forEach(key => {
+                const el = document.getElementById(tabs[key].id);
+                if (el) el.className = key === tab ? tabs[key].active : tabs[key].inactive;
+            });
+            renderFeed();
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categoryPillContainer');
+            container.innerHTML = categories.map(cat => {
+                const active = selectedCategory === cat;
+                return `<button onclick="selectCategory('${cat}')" class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition ${active ? 'bg-slate-900 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'}">${cat === 'All' ? 'All Sectors' : cat}</button>`;
+            }).join('');
+        }
+
+        function selectCategory(cat) {
+            selectedCategory = cat;
+            renderCategories();
+            renderFeed();
+        }
+
+        function handleSearch(val) {
+            searchQuery = val.trim().toLowerCase();
+            renderFeed();
+        }
+
+        async function voteIdea(id, type) {
+            const idea = ideas.find(i => i.id === id);
+            if (!idea) return;
+
+            if (idea.userVote === type) {
+                if (type === 'yes') idea.yesVotes--;
+                else idea.noVotes--;
+                idea.userVote = null;
+            } else {
+                if (idea.userVote === 'yes') idea.yesVotes--;
+                if (idea.userVote === 'no') idea.noVotes--;
+                if (type === 'yes') idea.yesVotes++;
+                else idea.noVotes++;
+                idea.userVote = type;
+            }
+            await upsertIdea(idea);
+            renderFeed();
+        }
+
+        async function addComment(e, id) {
+            e.preventDefault();
+            const input = document.getElementById(`commentInput-${id}`);
+            const text = input.value.trim();
+            if (!text) return;
+            const idea = ideas.find(i => i.id === id);
+            if (idea) {
+                idea.comments.push({
+                    author: currentRole === 'investor' ? 'Angel Investor' : 'Community Validator',
+                    text,
+                    time: 'Just now'
+                });
+                await upsertIdea(idea);
+                input.value = '';
+                renderFeed();
+            }
+        }
+
+        function openPledgeModal(id, title) {
+            document.getElementById('pledgeIdeaId').value = id;
+            document.getElementById('pledgeStartupTitle').textContent = title;
+            document.getElementById('pledgeModal').classList.remove('hidden');
+        }
+
+        function closePledgeModal() {
+            document.getElementById('pledgeModal').classList.add('hidden');
+        }
+
+        async function handlePledgeSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('pledgeIdeaId').value;
+            const investorName = document.getElementById('pledgeInvestorName').value.trim();
+            const amountLakhs = parseFloat(document.getElementById('pledgeAmountLakhs').value) || 0;
+            const note = document.getElementById('pledgeNote').value.trim();
+
+            const idea = ideas.find(i => i.id === id);
+            if (idea && investorName && amountLakhs > 0) {
+                idea.pledges.push({ investorName, amountLakhs, note });
+                await upsertIdea(idea);
+            }
+            e.target.reset();
+            closePledgeModal();
+            renderAll();
+        }
+
+        function animateValue(el, targetText) {
+            if (!el) return;
+            el.textContent = targetText;
+            el.style.transition = 'transform 0.25s ease';
+            el.style.transform = 'scale(1.06)';
+            setTimeout(() => {
+                el.style.transform = 'scale(1)';
+            }, 250);
+        }
+
+        function updateStats() {
+            const totalCount = ideas.length;
+            const fundingCount = ideas.filter(i => i.seekingFunding).length;
+
+            let totalLakhs = 0;
+            let totalAskLakhs = 0;
+            ideas.forEach(i => {
+                i.pledges.forEach(p => totalLakhs += p.amountLakhs);
+                if (i.seekingFunding && i.fundingAsk > 0) totalAskLakhs += i.fundingAsk;
+            });
+
+            const formattedPledge = totalLakhs >= 100 ? `₹${(totalLakhs / 100).toFixed(2)} Cr` : `₹${totalLakhs} L`;
+
+            animateValue(document.getElementById('statTotalIdeas'), String(totalCount));
+            animateValue(document.getElementById('fundingBadgeCount'), String(fundingCount));
+            animateValue(document.getElementById('statInvestorPledged'), formattedPledge);
+
+            const pitchesBar = document.getElementById('barLivePitches');
+            const raisingBar = document.getElementById('barRaisingCapital');
+            const pledgedBar = document.getElementById('barSoftPledged');
+
+            if (pitchesBar) {
+                pitchesBar.style.width = `${Math.min(100, Math.max(12, totalCount * 12))}%`;
+            }
+            if (raisingBar) {
+                const raisePct = totalCount > 0 ? Math.round((fundingCount / totalCount) * 100) : 10;
+                raisingBar.style.width = `${Math.max(10, Math.min(100, raisePct))}%`;
+            }
+            if (pledgedBar) {
+                const pledgePct = totalAskLakhs > 0 ? Math.round((totalLakhs / totalAskLakhs) * 100) : (totalLakhs > 0 ? 45 : 10);
+                pledgedBar.style.width = `${Math.max(10, Math.min(100, pledgePct))}%`;
+            }
+        }
+
+        function renderFeed() {
+            const feed = document.getElementById('startupFeed');
+
+            const filtered = ideas.filter(item => {
+                if (selectedCategory !== 'All' && item.category !== selectedCategory) return false;
+                if (quickTab === 'funding' && !item.seekingFunding) return false;
+                if (quickTab === 'stealth' && !item.stealth) return false;
+                if (quickTab === 'validated') {
+                    const total = item.yesVotes + item.noVotes;
+                    const pct = total > 0 ? (item.yesVotes / total) * 100 : 0;
+                    if (pct < 75) return false;
+                }
+                if (currentRole === 'investor' && !item.seekingFunding) return false;
+                if (searchQuery) {
+                    const hay = `${item.title} ${item.problem} ${item.solution} ${item.audience} ${item.tags.join(' ')}`.toLowerCase();
+                    if (!hay.includes(searchQuery)) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                feed.innerHTML = `
+                    <div class="bg-white border border-slate-200 rounded-2xl p-10 text-center space-y-3 shadow-sm">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                            <i data-lucide="lightbulb" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-sm">No startup pitches yet</h3>
+                        <p class="text-xs text-slate-500 max-w-sm mx-auto">Start fresh by pitching an idea to collect community validation and angel investor interest.</p>
+                        <button onclick="openPostModal()" class="mt-2 inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Pitch Your First Idea</span>
+                        </button>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            feed.innerHTML = filtered.map((item, idx) => {
+                const totalVotes = item.yesVotes + item.noVotes;
+                const yesPct = totalVotes > 0 ? Math.round((item.yesVotes / totalVotes) * 100) : 0;
+                const pledgedLakhs = item.pledges.reduce((sum, p) => sum + p.amountLakhs, 0);
+                const pledgeRatioPct = item.seekingFunding && item.fundingAsk > 0
+                    ? Math.min(100, Math.round((pledgedLakhs / item.fundingAsk) * 100))
+                    : 0;
+
+                return `
+                    <article style="animation-delay: ${Math.min(idx * 55, 280)}ms" class="pitch-card bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <div class="flex items-center flex-wrap gap-2">
+                                    <h2 class="font-extrabold text-base sm:text-lg text-slate-900">${escapeHtml(item.title)}</h2>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">${escapeHtml(item.category)}</span>
+                                    ${item.stealth ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">🥷 Stealth • ${escapeHtml(item.proofHash)}</span>` : ''}
+                                    ${item.seekingFunding ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-300">Ask: ₹${item.fundingAsk}L (${escapeHtml(item.stage)})</span>` : ''}
+                                </div>
+                                <p class="text-xs text-slate-500 mt-1">
+                                    ${item.stealth ? 'Stealth Founder' : `<strong class="text-slate-700">${escapeHtml(item.author)}</strong> • ${escapeHtml(item.role)}`} • ${escapeHtml(item.timestamp)}
+                                </p>
+                            </div>
+                            <div class="flex items-center space-x-3 font-mono">
+                                <div class="text-right">
+                                    <span class="text-sm font-bold text-emerald-600">${yesPct}%</span>
+                                    <span class="text-[11px] text-slate-400 block">Validation (${totalVotes})</span>
+                                </div>
+                                ${devMode ? `<button onclick="deleteIdea('${item.id}')" class="px-2.5 py-1.5 rounded-xl text-xs font-sans font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition">Delete</button>` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Fluid Validation & Soft-Pledge Bars -->
+                        <div class="grid grid-cols-1 ${item.seekingFunding ? 'sm:grid-cols-2' : ''} gap-3 bg-blue-50/40 border border-blue-100/90 rounded-xl p-3">
+                            <div>
+                                <div class="flex items-center justify-between text-[11px] font-semibold mb-1.5">
+                                    <span class="text-blue-900">Validation Pulse</span>
+                                    <span class="font-mono text-blue-700">${yesPct}% Positive (${totalVotes} votes)</span>
+                                </div>
+                                <div class="w-full h-2 rounded-full bg-blue-100 overflow-hidden relative">
+                                    <div class="h-full rounded-full fluid-bar-blue bar-shimmer" style="width: ${yesPct}%"></div>
+                                </div>
+                            </div>
+                            ${item.seekingFunding ? `
+                                <div>
+                                    <div class="flex items-center justify-between text-[11px] font-semibold mb-1.5">
+                                        <span class="text-blue-900">Soft-Pledge Progress</span>
+                                        <span class="font-mono text-emerald-700">₹${pledgedLakhs}L / ₹${item.fundingAsk}L (${pledgeRatioPct}%)</span>
+                                    </div>
+                                    <div class="w-full h-2 rounded-full bg-blue-100 overflow-hidden relative">
+                                        <div class="h-full rounded-full fluid-bar-emerald bar-shimmer" style="width: ${pledgeRatioPct}%"></div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                            <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+                                <p class="font-bold text-slate-700 mb-1">Problem</p>
+                                <p class="text-slate-600 leading-relaxed">${escapeHtml(item.problem)}</p>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+                                <p class="font-bold text-slate-700 mb-1">Proposed Solution</p>
+                                <p class="text-slate-600 leading-relaxed">${escapeHtml(item.solution)}</p>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+                                <p class="font-bold text-slate-700 mb-1">Target Market</p>
+                                <p class="text-slate-600 leading-relaxed">${escapeHtml(item.audience)}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                            <div class="flex items-center flex-wrap gap-2">
+                                <button onclick="voteIdea('${item.id}', 'yes')" class="px-3 py-1.5 rounded-xl font-semibold border transition active:scale-95 ${item.userVote === 'yes' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'}">
+                                    👍 Valid (${item.yesVotes})
+                                </button>
+                                <button onclick="voteIdea('${item.id}', 'no')" class="px-3 py-1.5 rounded-xl font-semibold border transition active:scale-95 ${item.userVote === 'no' ? 'bg-rose-600 text-white border-rose-600' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                                    👎 Needs Work (${item.noVotes})
+                                </button>
+                                ${item.seekingFunding ? `<button onclick="openPledgeModal('${item.id}', '${escapeHtml(item.title).replace(/'/g, "\\'")}')" class="px-3 py-1.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow-sm transition">Soft-Pledge (₹${pledgedLakhs}L)</button>` : ''}
+                            </div>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${item.tags.map(t => `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-mono">#${escapeHtml(t)}</span>`).join('')}
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 pt-2 border-t border-slate-100 text-xs">
+                            <form onsubmit="addComment(event, '${item.id}')" class="flex space-x-2">
+                                <input type="text" id="commentInput-${item.id}" placeholder="Add validation feedback..." class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-500">
+                                <button type="submit" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-semibold text-xs">Post</button>
+                            </form>
+                            ${item.comments.map(c => `
+                                <div class="bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
+                                    <span class="font-bold text-slate-700">${escapeHtml(c.author)}</span> <span class="text-slate-400 text-[10px]">• ${escapeHtml(c.time)}</span>
+                                    <p class="text-slate-600 mt-0.5">${escapeHtml(c.text)}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </article>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderAll() {
+            updateBrandTitle();
+            renderCategories();
+            updateStats();
+            renderFeed();
+        }
+
+        let currentUser = null;
+
+        function showAuthFeedback(message, isError = false) {
+            const box = document.getElementById('authFeedback');
+            if (!box) return;
+            box.textContent = message;
+            box.className = isError
+                ? 'mt-3 text-xs rounded-xl px-3 py-2 border bg-rose-50 text-rose-700 border-rose-200'
+                : 'mt-3 text-xs rounded-xl px-3 py-2 border bg-emerald-50 text-emerald-800 border-emerald-200';
+            box.classList.remove('hidden');
+        }
+
+        function clearAuthFeedback() {
+            const box = document.getElementById('authFeedback');
+            if (box) {
+                box.textContent = '';
+                box.classList.add('hidden');
+            }
+        }
+
+        function switchAuthTab(tab) {
+            clearAuthFeedback();
+            const isLogin = tab === 'login';
+            const loginTab = document.getElementById('authTabLogin');
+            const signupTab = document.getElementById('authTabSignup');
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const title = document.getElementById('authModalTitle');
+            const subtitle = document.getElementById('authModalSubtitle');
+
+            loginTab.className = isLogin
+                ? 'py-2 rounded-lg bg-white text-slate-900 shadow-sm transition'
+                : 'py-2 rounded-lg text-slate-600 hover:text-slate-900 transition';
+            signupTab.className = !isLogin
+                ? 'py-2 rounded-lg bg-white text-slate-900 shadow-sm transition'
+                : 'py-2 rounded-lg text-slate-600 hover:text-slate-900 transition';
+
+            loginForm.classList.toggle('hidden', !isLogin);
+            signupForm.classList.toggle('hidden', isLogin);
+
+            title.textContent = isLogin ? 'Log In to PitchPulse' : 'Create Your PitchPulse Account';
+            subtitle.textContent = isLogin
+                ? 'Sign in with your email and password.'
+                : 'Sign up to pitch startup ideas, validate concepts, and connect.';
+        }
+
+        function openAuthModal(tab = 'login') {
+            switchAuthTab(tab);
+            document.getElementById('authModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+            clearAuthFeedback();
+        }
+
+        function updateAuthUI() {
+            const badge = document.getElementById('authUserBadge');
+            const label = document.getElementById('authUserLabel');
+            const loginBtn = document.getElementById('authOpenBtn');
+            const logoutBtn = document.getElementById('authLogoutBtn');
+            const authorInput = document.getElementById('inputAuthor');
+            const roleInput = document.getElementById('inputRole');
+            const pledgeNameInput = document.getElementById('pledgeInvestorName');
+
+            if (currentUser) {
+                const metaName = currentUser.user_metadata && currentUser.user_metadata.full_name;
+                const displayName = metaName || currentUser.email || 'Member';
+                label.textContent = displayName;
+                applyAvatarVisuals(getUserProfilePhoto(currentUser), getInitials(displayName));
+                badge.classList.remove('hidden');
+                badge.classList.add('inline-flex');
+                loginBtn.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+                logoutBtn.classList.add('inline-flex');
+
+                if (authorInput && !authorInput.value.trim()) {
+                    authorInput.value = displayName;
+                }
+                if (roleInput && currentUser.user_metadata && currentUser.user_metadata.role && !roleInput.value.trim()) {
+                    roleInput.value = currentUser.user_metadata.role;
+                }
+                if (pledgeNameInput && !pledgeNameInput.value.trim()) {
+                    pledgeNameInput.value = displayName;
+                }
+                if (document.getElementById('profileModal') && !document.getElementById('profileModal').classList.contains('hidden')) {
+                    populateProfileModal();
+                }
+            } else {
+                label.textContent = '';
+                badge.classList.add('hidden');
+                badge.classList.remove('inline-flex');
+                loginBtn.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+                logoutBtn.classList.remove('inline-flex');
+            }
+            lucide.createIcons();
+        }
+
+        function getProfilePhotoKey(user) {
+            const uid = (user && (user.id || user.email)) || 'guest';
+            return `pitchpulse_avatar_${uid}`;
+        }
+
+        function getUserProfilePhoto(user = currentUser) {
+            if (!user) return '';
+            const metaUrl = user.user_metadata && user.user_metadata.avatar_url;
+            if (metaUrl) return metaUrl;
+            try {
+                return localStorage.getItem(getProfilePhotoKey(user)) || '';
+            } catch (_e) {
+                return '';
+            }
+        }
+
+        function applyAvatarVisuals(photoUrl, initials) {
+            const headerImg = document.getElementById('headerAvatarImg');
+            const headerInit = document.getElementById('headerAvatarInitials');
+            const modalImg = document.getElementById('profileAvatarImg');
+            const modalInit = document.getElementById('profileAvatarInitials');
+            const removeBtn = document.getElementById('removePhotoBtn');
+
+            if (headerInit) headerInit.textContent = initials;
+            if (modalInit) modalInit.textContent = initials;
+
+            if (photoUrl) {
+                if (headerImg) {
+                    headerImg.src = photoUrl;
+                    headerImg.classList.remove('hidden');
+                }
+                if (headerInit) headerInit.classList.add('hidden');
+
+                if (modalImg) {
+                    modalImg.src = photoUrl;
+                    modalImg.classList.remove('hidden');
+                }
+                if (modalInit) modalInit.classList.add('hidden');
+                if (removeBtn) removeBtn.classList.remove('hidden');
+            } else {
+                if (headerImg) {
+                    headerImg.src = '';
+                    headerImg.classList.add('hidden');
+                }
+                if (headerInit) headerInit.classList.remove('hidden');
+
+                if (modalImg) {
+                    modalImg.src = '';
+                    modalImg.classList.add('hidden');
+                }
+                if (modalInit) modalInit.classList.remove('hidden');
+                if (removeBtn) removeBtn.classList.add('hidden');
+            }
+        }
+
+        async function saveUserProfilePhoto(dataUrl) {
+            if (!currentUser) return;
+            try {
+                if (dataUrl) {
+                    localStorage.setItem(getProfilePhotoKey(currentUser), dataUrl);
+                } else {
+                    localStorage.removeItem(getProfilePhotoKey(currentUser));
+                }
+            } catch (_e) {
+                // Ignore storage quota errors
+            }
+
+            if (db && db.auth && typeof db.auth.updateUser === 'function') {
+                const { data, error } = await db.auth.updateUser({
+                    data: { avatar_url: dataUrl || null }
+                });
+                if (!error && data && data.user) {
+                    currentUser = data.user;
+                }
+            }
+            updateAuthUI();
+        }
+
+        function handleProfilePhotoChange(event) {
+            const file = event.target && event.target.files && event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('Please choose an image file (JPG, PNG, or WebP).');
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Please pick an image smaller than 2 MB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                const img = new Image();
+                img.onload = async function () {
+                    const canvas = document.createElement('canvas');
+                    const size = 192;
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    const minSide = Math.min(img.width, img.height);
+                    const sx = (img.width - minSide) / 2;
+                    const sy = (img.height - minSide) / 2;
+                    ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                    await saveUserProfilePhoto(compressedDataUrl);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        async function removeProfilePhoto() {
+            await saveUserProfilePhoto('');
+        }
+
+        function getInitials(nameOrEmail) {
+            const cleaned = (nameOrEmail || 'PP').trim();
+            if (!cleaned) return 'PP';
+            const parts = cleaned.split(/\s+/);
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[1][0]).toUpperCase();
+            }
+            return cleaned.slice(0, 2).toUpperCase();
+        }
+
+        function populateProfileModal() {
+            if (!currentUser) return;
+            const meta = currentUser.user_metadata || {};
+            const fullName = (meta.full_name || '').trim() || (currentUser.email ? currentUser.email.split('@')[0] : 'Member');
+            const email = currentUser.email || 'Not available';
+            const role = (meta.role || '').trim() || 'Founder / Builder';
+
+            const userNameLower = fullName.toLowerCase();
+            const userEmailLower = email.toLowerCase();
+
+            const pitchCount = ideas.filter(item => {
+                const authorLower = (item.author || '').toLowerCase();
+                return authorLower === userNameLower || authorLower === userEmailLower;
+            }).length;
+
+            let pledgeCount = 0;
+            ideas.forEach(item => {
+                (item.pledges || []).forEach(p => {
+                    const invLower = (p.investorName || '').toLowerCase();
+                    if (invLower === userNameLower || invLower === userEmailLower) {
+                        pledgeCount += 1;
+                    }
+                });
+            });
+
+            const initials = getInitials(fullName);
+            applyAvatarVisuals(getUserProfilePhoto(currentUser), initials);
+            document.getElementById('profileModalName').textContent = fullName;
+            document.getElementById('profileModalEmail').textContent = email;
+            document.getElementById('profileDetailName').textContent = fullName;
+            document.getElementById('profileDetailEmail').textContent = email;
+            document.getElementById('profileDetailRole').textContent = role;
+            document.getElementById('profilePitchCount').textContent = String(pitchCount);
+            document.getElementById('profilePledgeCount').textContent = String(pledgeCount);
+        }
+
+        function openProfileModal() {
+            if (!currentUser) {
+                openAuthModal('login');
+                return;
+            }
+            populateProfileModal();
+            document.getElementById('profileModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.add('hidden');
+        }
+
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            clearAuthFeedback();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginSubmitBtn');
+
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+
+            const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+            btn.disabled = false;
+            btn.textContent = 'Log In';
+
+            if (error) {
+                showAuthFeedback(error.message || 'Unable to log in. Check your email and password.', true);
+                return;
+            }
+
+            currentUser = data.user || null;
+            updateAuthUI();
+            e.target.reset();
+            closeAuthModal();
+        }
+
+        async function handleSignupSubmit(e) {
+            e.preventDefault();
+            clearAuthFeedback();
+            const fullName = document.getElementById('signupName').value.trim();
+            const role = document.getElementById('signupRole').value;
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const btn = document.getElementById('signupSubmitBtn');
+
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            const { data, error } = await db.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: fullName,
+                        role
+                    }
+                }
+            });
+
+            btn.disabled = false;
+            btn.textContent = 'Create Account';
+
+            if (error) {
+                showAuthFeedback(error.message || 'Could not create account.', true);
+                return;
+            }
+
+            e.target.reset();
+            if (data.session) {
+                currentUser = data.session.user;
+                updateAuthUI();
+                closeAuthModal();
+            } else {
+                showAuthFeedback('Account created! Please check your email to confirm your address before signing in.', false);
+            }
+        }
+
+        async function handleLogout() {
+            await db.auth.signOut();
+            currentUser = null;
+            updateAuthUI();
+        }
+
+        async function initAuthSession() {
+            const { data } = await db.auth.getSession();
+            currentUser = (data && data.session && data.session.user) || null;
+            updateAuthUI();
+
+            db.auth.onAuthStateChange((_event, session) => {
+                currentUser = (session && session.user) || null;
+                updateAuthUI();
+            });
+        }
+
+        (async function init() {
+            await initAuthSession();
+            await loadState();
+            renderAll();
+        })();
+    </script>
+</body>
+</html>
